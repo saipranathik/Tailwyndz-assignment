@@ -473,6 +473,257 @@ def generate_timestamps(
 
     return timestamps
 
+# ===========================================================================
+# Event-day timestamp generation
+# ===========================================================================
+
+def generate_event_timestamps(
+    start: datetime,
+    end: datetime,
+    n_posts: int,
+    rng: np.random.Generator,
+) -> list[datetime]:
+    """
+    Generate timestamps for the 14-hour event period.
+
+    Event activity follows a natural festival rhythm:
+    - moderate activity when the event begins
+    - increasing activity through the afternoon
+    - strong evening activity
+    - peak activity around the later performances
+    - decline toward the end of the event
+    """
+
+    total_minutes = int(
+        (end - start).total_seconds() / 60
+    )
+
+    candidate_minutes = np.arange(
+        total_minutes
+    )
+
+    weights = np.zeros(
+        total_minutes,
+        dtype=float,
+    )
+
+    for minute_offset in candidate_minutes:
+
+        timestamp = start + timedelta(
+            minutes=int(minute_offset)
+        )
+
+        elapsed_hours = (
+            timestamp - start
+        ).total_seconds() / 3600
+
+        # ---------------------------------------------------------------
+        # Event-day activity curve
+        # ---------------------------------------------------------------
+
+        if elapsed_hours < 2:
+            # Opening period.
+            weight = 1.0
+
+        elif elapsed_hours < 5:
+            # Afternoon build-up.
+            weight = 1.5
+
+        elif elapsed_hours < 8:
+            # Stronger activity as performances progress.
+            weight = 2.2
+
+        elif elapsed_hours < 11:
+            # Evening / major performances.
+            weight = 3.0
+
+        else:
+            # Final part of the event.
+            weight = 2.0
+
+        weights[minute_offset] = weight
+
+    weights /= weights.sum()
+
+    selected_minutes = rng.choice(
+        candidate_minutes,
+        size=n_posts,
+        p=weights,
+    )
+
+    seconds = rng.integers(
+        low=0,
+        high=60,
+        size=n_posts,
+    )
+
+    timestamps = [
+        start
+        + timedelta(
+            minutes=int(minute),
+            seconds=int(second),
+        )
+        for minute, second in zip(
+            selected_minutes,
+            seconds,
+        )
+    ]
+
+    return timestamps
+
+# ===========================================================================
+# Event-day post generation
+# ===========================================================================
+
+def generate_event_posts(
+    authors: pd.DataFrame,
+    n_posts: int,
+    start: datetime,
+    end: datetime,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """
+    Generate ordinary event-day social posts.
+
+    At this stage these are still clean, non-incident posts.
+    Incidents and automated activity will be added later.
+    """
+
+    author_indices = rng.integers(
+        low=0,
+        high=len(authors),
+        size=n_posts,
+    )
+
+    selected_authors = authors.iloc[
+        author_indices
+    ].reset_index(drop=True)
+
+    platforms = rng.choice(
+        PLATFORMS,
+        size=n_posts,
+        p=[
+            0.40,
+            0.25,
+            0.20,
+            0.15,
+        ],
+    )
+
+    languages = [
+        choose_language(rng)
+        for _ in range(n_posts)
+    ]
+
+    timestamps = generate_event_timestamps(
+        start=start,
+        end=end,
+        n_posts=n_posts,
+        rng=rng,
+    )
+
+    texts = [
+        generate_post_text(
+            language,
+            platform,
+            rng,
+        )
+        for language, platform in zip(
+            languages,
+            platforms,
+        )
+    ]
+
+    follower_counts = (
+        selected_authors[
+            "follower_count"
+        ].to_numpy()
+    )
+
+    # Event-day engagement is somewhat higher than baseline.
+    likes = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                1,
+                follower_counts / 70,
+            ),
+        ),
+    )
+
+    reshares = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.3,
+                follower_counts / 350,
+            ),
+        ),
+    )
+
+    replies = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.3,
+                follower_counts / 500,
+            ),
+        ),
+    )
+
+    geo = []
+
+    for platform in platforms:
+
+        if PLATFORM_CONFIG[
+            platform
+        ]["geo_available"]:
+
+            geo.append(
+                str(
+                    rng.choice(CITIES)
+                )
+            )
+
+        else:
+            geo.append(None)
+
+    posts = pd.DataFrame(
+        {
+            "post_id": [
+                f"E{i:09d}"
+                for i in range(
+                    1,
+                    n_posts + 1,
+                )
+            ],
+
+            "platform": platforms,
+
+            "author_id": selected_authors[
+                "author_id"
+            ],
+
+            "timestamp": timestamps,
+
+            "text": texts,
+
+            "language": languages,
+
+            "geo": geo,
+
+            "follower_count": follower_counts,
+
+            "likes": likes,
+
+            "reshares": reshares,
+
+            "replies": replies,
+        }
+    )
+
+    return posts
+
 
 # ===========================================================================
 # Normal post generation
@@ -810,6 +1061,35 @@ def main() -> None:
     # -----------------------------------------------------------------------
 
     DEVELOPMENT_POST_COUNT = 10_000
+    
+    # Event-day development sample
+    DEVELOPMENT_EVENT_POST_COUNT = 20_000
+
+    event_posts = generate_event_posts(
+        authors=authors,
+        n_posts=DEVELOPMENT_EVENT_POST_COUNT,
+        start=EVENT_START,
+        end=EVENT_END,
+        rng=np.random.default_rng(
+            SEED + 1
+        ),
+    )
+
+    event_posts.to_csv(
+        RAW_DIR
+        / "posts_event_preview.csv",
+        index=False,
+    )
+
+    print(
+        f"Generated "
+        f"{len(event_posts):,} event-day posts."
+    )
+
+    print(
+        "Saved to "
+        f"{RAW_DIR / 'posts_event_preview.csv'}"
+    )
 
     posts = generate_normal_posts(
         authors=authors,
