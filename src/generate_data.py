@@ -77,6 +77,72 @@ PLATFORMS = [
     "platform_d",
 ]
 
+# ===========================================================================
+# Planted incident definitions
+# ===========================================================================
+
+INCIDENT_DEFINITIONS = [
+    {
+        "incident_id": "INC_QUEUE_CRUSH",
+        "incident_type": "queue_crush",
+        "name": "Queue crush",
+        "start": EVENT_START + timedelta(hours=2),
+        "duration_minutes": 40,
+        "severity": "high",
+        "sentiment": "negative",
+        "expected_volume_multiplier": 3.0,
+    },
+    {
+        "incident_id": "INC_SOUND_FAILURE",
+        "incident_type": "sound_failure",
+        "name": "Sound failure",
+        "start": EVENT_START + timedelta(hours=5),
+        "duration_minutes": 12,
+        "severity": "high",
+        "sentiment": "negative",
+        "expected_volume_multiplier": 4.0,
+    },
+    {
+        "incident_id": "INC_SPONSOR_ANNOUNCEMENT",
+        "incident_type": "sponsor_announcement",
+        "name": "Sponsor announcement",
+        "start": EVENT_START + timedelta(hours=7),
+        "duration_minutes": 90,
+        "severity": "medium",
+        "sentiment": "negative",
+        "expected_volume_multiplier": 1.8,
+    },
+    {
+        "incident_id": "INC_PAYMENT_OUTAGE",
+        "incident_type": "payment_outage",
+        "name": "Payment outage",
+        "start": EVENT_START + timedelta(hours=9),
+        "duration_minutes": 30,
+        "severity": "medium",
+        "sentiment": "neutral",
+        "expected_volume_multiplier": 2.0,
+    },
+    {
+        "incident_id": "INC_POSITIVE_DECOY_1",
+        "incident_type": "positive_decoy",
+        "name": "Positive performance reaction",
+        "start": EVENT_START + timedelta(hours=3),
+        "duration_minutes": 25,
+        "severity": "low",
+        "sentiment": "positive",
+        "expected_volume_multiplier": 2.5,
+    },
+    {
+        "incident_id": "INC_POSITIVE_DECOY_2",
+        "incident_type": "positive_decoy",
+        "name": "Positive crowd reaction",
+        "start": EVENT_START + timedelta(hours=8),
+        "duration_minutes": 35,
+        "severity": "low",
+        "sentiment": "positive",
+        "expected_volume_multiplier": 2.2,
+    },
+]
 
 # ===========================================================================
 # Platform configuration
@@ -170,6 +236,104 @@ NORMAL_TEXT_TEMPLATES = {
         "Die Musik ist wirklich gut.",
         "Gerade beim Festival angekommen.",
     ],
+}
+
+# ===========================================================================
+# Incident-specific text
+# ===========================================================================
+
+INCIDENT_TEXT_TEMPLATES = {
+    "queue_crush": {
+        "en": [
+            "Queue near the entrance is getting really bad.",
+            "People are being pushed around near the gate.",
+            "This queue is completely out of control.",
+            "Too many people packed into this entrance.",
+            "Security needs to manage the crowd here.",
+        ],
+        "hi": [
+            "गेट के पास बहुत ज्यादा भीड़ हो गई है।",
+            "यहाँ लाइन बहुत खराब हो गई है।",
+            "गेट पर लोग बहुत ज्यादा धक्का दे रहे हैं।",
+        ],
+        "hinglish": [
+            "Gate ke paas bahut zyada bheed ho gayi.",
+            "Queue bilkul out of control ho gayi hai.",
+            "Log entrance pe push kar rahe hain.",
+        ],
+    },
+
+    "sound_failure": {
+        "en": [
+            "The sound has completely stopped.",
+            "There is no audio on the main stage.",
+            "Sound system just went down.",
+            "We cannot hear anything from the stage.",
+        ],
+        "hi": [
+            "मेन स्टेज की आवाज़ बंद हो गई है।",
+            "साउंड सिस्टम काम नहीं कर रहा है।",
+        ],
+        "hinglish": [
+            "Main stage ka sound band ho gaya.",
+            "Sound system kaam nahi kar raha.",
+            "Stage se kuch sunai nahi de raha.",
+        ],
+    },
+
+    "sponsor_announcement": {
+        "en": [
+            "Why are they pushing this sponsor announcement again?",
+            "This sponsor announcement is taking forever.",
+            "Nobody came here for another sponsor speech.",
+            "The sponsor promotion is getting annoying.",
+        ],
+        "hi": [
+            "ये स्पॉन्सर अनाउंसमेंट फिर से क्यों हो रहा है?",
+            "स्पॉन्सर का ये प्रमोशन बहुत लंबा हो गया।",
+        ],
+        "hinglish": [
+            "Ye sponsor announcement phir se kyun ho raha hai?",
+            "Sponsor promotion kaafi annoying ho gaya.",
+            "Itna lamba sponsor segment kyun?",
+        ],
+    },
+
+    "payment_outage": {
+        "en": [
+            "Card payments aren't going through at the food stalls.",
+            "Payment terminals seem to be down.",
+            "Having trouble paying for food right now.",
+            "The card machine isn't responding.",
+        ],
+        "hi": [
+            "फूड स्टॉल पर कार्ड पेमेंट नहीं हो रहा है।",
+            "पेमेंट मशीन काम नहीं कर रही है।",
+        ],
+        "hinglish": [
+            "Food stalls pe card payment nahi ho raha.",
+            "Payment terminal down lag raha hai.",
+            "Card machine respond nahi kar rahi.",
+        ],
+    },
+
+    "positive_decoy": {
+        "en": [
+            "That performance was absolutely incredible!",
+            "Best set of the festival so far!",
+            "Everyone is singing along and it is amazing.",
+            "This crowd has such great energy tonight!",
+        ],
+        "hi": [
+            "ये परफॉर्मेंस कमाल की थी!",
+            "आज का सेट सबसे अच्छा था!",
+        ],
+        "hinglish": [
+            "Ye performance ekdum amazing thi!",
+            "Aaj ka set sabse best tha!",
+            "Crowd ki energy next level hai!",
+        ],
+    },
 }
 
 
@@ -724,6 +888,336 @@ def generate_event_posts(
 
     return posts
 
+def generate_clean_post_ids(
+    n_posts: int,
+    prefix: str,
+) -> list[str]:
+    """
+    Generate ordinary-looking post IDs.
+
+    The prefix is only used internally to avoid collisions while
+    developing. Incident information is never encoded in the ID.
+    """
+
+    return [
+        f"{prefix}{i:09d}"
+        for i in range(1, n_posts + 1)
+    ]
+
+# ===========================================================================
+# Incident post generation
+# ===========================================================================
+
+def generate_incident_posts(
+    authors: pd.DataFrame,
+    incident: dict,
+    n_posts: int,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """
+    Generate posts associated with one planted incident.
+
+    The incident identity is stored temporarily in an internal column.
+    This column is removed before the raw event stream is saved.
+    """
+
+    incident_start = incident["start"]
+
+    incident_end = (
+        incident_start
+        + timedelta(
+            minutes=incident["duration_minutes"]
+        )
+    )
+
+    author_indices = rng.integers(
+        low=0,
+        high=len(authors),
+        size=n_posts,
+    )
+
+    selected_authors = authors.iloc[
+        author_indices
+    ].reset_index(drop=True)
+
+    platforms = rng.choice(
+        PLATFORMS,
+        size=n_posts,
+        p=[
+            0.40,
+            0.25,
+            0.20,
+            0.15,
+        ],
+    )
+
+    languages = [
+        choose_language(rng)
+        for _ in range(n_posts)
+    ]
+
+    timestamps = generate_timestamps(
+        start=incident_start,
+        end=incident_end,
+        n_posts=n_posts,
+        rng=rng,
+    )
+
+    incident_type = incident[
+        "incident_type"
+    ]
+
+    texts = []
+
+    for language in languages:
+
+        language_templates = (
+            INCIDENT_TEXT_TEMPLATES[
+                incident_type
+            ].get(
+                language,
+                INCIDENT_TEXT_TEMPLATES[
+                    incident_type
+                ]["en"],
+            )
+        )
+
+        text = str(
+            rng.choice(
+                language_templates
+            )
+        )
+
+        if rng.random() < 0.30:
+
+            text += str(
+                rng.choice(
+                    [
+                        " 😭",
+                        " 😡",
+                        " 😐",
+                        " 🙄",
+                        " 😍",
+                        " 🔥",
+                    ]
+                )
+            )
+
+        texts.append(text)
+
+    follower_counts = (
+        selected_authors[
+            "follower_count"
+        ].to_numpy()
+    )
+
+    multiplier = incident[
+        "expected_volume_multiplier"
+    ]
+
+    likes = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                1,
+                follower_counts
+                / 100
+                * multiplier,
+            ),
+        ),
+    )
+
+    reshares = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.2,
+                follower_counts
+                / 500
+                * multiplier,
+            ),
+        ),
+    )
+
+    replies = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.2,
+                follower_counts
+                / 700
+                * multiplier,
+            ),
+        ),
+    )
+
+    geo = []
+
+    for platform in platforms:
+
+        if PLATFORM_CONFIG[
+            platform
+        ]["geo_available"]:
+
+            geo.append(
+                str(
+                    rng.choice(
+                        CITIES
+                    )
+                )
+            )
+
+        else:
+            geo.append(None)
+
+    posts = pd.DataFrame(
+        {
+            "post_id": [
+                f"TEMP_{i:09d}"
+                for i in range(
+                    1,
+                    n_posts + 1,
+                )
+            ],
+
+            "platform": platforms,
+
+            "author_id": selected_authors[
+                "author_id"
+            ],
+
+            "timestamp": timestamps,
+
+            "text": texts,
+
+            "language": languages,
+
+            "geo": geo,
+
+            "follower_count": follower_counts,
+
+            "likes": likes,
+
+            "reshares": reshares,
+
+            "replies": replies,
+
+            # ---------------------------------------------------------------
+            # PRIVATE DEVELOPMENT LABEL
+            # ---------------------------------------------------------------
+            #
+            # This is used ONLY while constructing ground truth.
+            # It will be removed before the raw event stream is saved.
+            #
+            "_incident_id": incident[
+                "incident_id"
+            ],
+        }
+    )
+
+    return posts
+
+def combine_event_stream(
+    normal_posts: pd.DataFrame,
+    incident_posts: pd.DataFrame,
+    incident_labels: list[dict],
+    rng: np.random.Generator,
+) -> tuple[pd.DataFrame, list[dict]]:
+    """
+    Combine normal event activity and planted incident posts.
+
+    The private incident label is used to create ground truth and is then
+    removed before the event stream is saved.
+    """
+
+    normal_posts = normal_posts.copy()
+
+    incident_posts = incident_posts.copy()
+
+    # Normal posts are not associated with an incident.
+    normal_posts["_incident_id"] = None
+
+    # Combine both streams.
+    combined = pd.concat(
+        [
+            normal_posts,
+            incident_posts,
+        ],
+        ignore_index=True,
+    )
+
+    # Shuffle the combined event stream.
+    combined = combined.sample(
+        frac=1,
+        random_state=SEED,
+    ).reset_index(drop=True)
+
+    # Generate final ordinary-looking IDs.
+    combined["post_id"] = [
+        f"P{i:09d}"
+        for i in range(
+            1,
+            len(combined) + 1,
+        )
+    ]
+
+    # -----------------------------------------------------------------------
+    # Build private ground-truth mapping.
+    # -----------------------------------------------------------------------
+
+    updated_labels = []
+
+    for _, row in combined.iterrows():
+
+        incident_id = row[
+            "_incident_id"
+        ]
+
+        if pd.notna(incident_id):
+
+            incident_info = next(
+                (
+                    item
+                    for item in incident_labels
+                    if item[
+                        "incident_id"
+                    ]
+                    == incident_id
+                ),
+                None,
+            )
+
+            if incident_info is not None:
+
+                updated_labels.append(
+                    {
+                        "post_id": row[
+                            "post_id"
+                        ],
+
+                        "incident_id":
+                            incident_info[
+                                "incident_id"
+                            ],
+
+                        "incident_type":
+                            incident_info[
+                                "incident_type"
+                            ],
+                    }
+                )
+
+    # Remove the private label before saving raw data.
+    combined = combined.drop(
+        columns=[
+            "_incident_id"
+        ]
+    )
+
+    return (
+        combined,
+        updated_labels,
+    )
 
 # ===========================================================================
 # Normal post generation
@@ -1039,12 +1533,16 @@ def main() -> None:
         f"{EVENT_END}"
     )
 
-    # Initialise private ground truth.
-    ground_truth = (
-        initialise_ground_truth()
-    )
+    # -----------------------------------------------------------------------
+    # Initialise private ground truth
+    # -----------------------------------------------------------------------
 
-    # Generate authors.
+    ground_truth = initialise_ground_truth()
+
+    # -----------------------------------------------------------------------
+    # Generate authors
+    # -----------------------------------------------------------------------
+
     authors = generate_authors()
 
     save_author_preview(
@@ -1052,17 +1550,39 @@ def main() -> None:
     )
 
     # -----------------------------------------------------------------------
-    # Development sample
-    # -----------------------------------------------------------------------
-    #
-    # We intentionally start small while developing the generator.
-    #
-    # The final assessment dataset will be much larger.
+    # Generate baseline development sample
     # -----------------------------------------------------------------------
 
     DEVELOPMENT_POST_COUNT = 10_000
-    
-    # Event-day development sample
+
+    baseline_posts = generate_normal_posts(
+        authors=authors,
+        n_posts=DEVELOPMENT_POST_COUNT,
+        start=BASELINE_START,
+        end=BASELINE_END,
+        rng=np.random.default_rng(SEED),
+    )
+
+    baseline_posts.to_csv(
+        RAW_DIR
+        / "posts_baseline_preview.csv",
+        index=False,
+    )
+
+    print(
+        f"\nGenerated "
+        f"{len(baseline_posts):,} baseline posts."
+    )
+
+    print(
+        "Saved to "
+        f"{RAW_DIR / 'posts_baseline_preview.csv'}"
+    )
+
+    # -----------------------------------------------------------------------
+    # Generate event-day development sample
+    # -----------------------------------------------------------------------
+
     DEVELOPMENT_EVENT_POST_COUNT = 20_000
 
     event_posts = generate_event_posts(
@@ -1075,65 +1595,205 @@ def main() -> None:
         ),
     )
 
-    event_posts.to_csv(
-        RAW_DIR
-        / "posts_event_preview.csv",
-        index=False,
+    print(
+        f"Generated "
+        f"{len(event_posts):,} normal event-day posts."
+    )
+
+    # -----------------------------------------------------------------------
+    # Generate planted incidents
+    # -----------------------------------------------------------------------
+
+    incident_posts = []
+
+    incident_labels = []
+
+    for incident_index, incident in enumerate(
+        INCIDENT_DEFINITIONS
+    ):
+
+        # Incident volume depends on duration and intensity.
+        incident_post_count = int(
+            250
+            * (
+                incident[
+                    "duration_minutes"
+                ]
+                / 30
+            )
+            * incident[
+                "expected_volume_multiplier"
+            ]
+        )
+
+        generated_incident_posts = (
+            generate_incident_posts(
+                authors=authors,
+                incident=incident,
+                n_posts=incident_post_count,
+                rng=np.random.default_rng(
+                    SEED
+                    + 100
+                    + incident_index
+                ),
+            )
+        )
+
+        incident_posts.append(
+            generated_incident_posts
+        )
+
+        incident_labels.append(
+            {
+                "incident_id": incident[
+                    "incident_id"
+                ],
+
+                "incident_type": incident[
+                    "incident_type"
+                ],
+            }
+        )
+
+    incident_posts = pd.concat(
+        incident_posts,
+        ignore_index=True,
     )
 
     print(
         f"Generated "
-        f"{len(event_posts):,} event-day posts."
+        f"{len(incident_posts):,} incident posts."
+    )
+
+    # -----------------------------------------------------------------------
+    # Combine normal event activity + incidents
+    # -----------------------------------------------------------------------
+
+    event_stream, incident_post_mapping = (
+        combine_event_stream(
+            normal_posts=event_posts,
+            incident_posts=incident_posts,
+            incident_labels=incident_labels,
+            rng=np.random.default_rng(
+                SEED + 500
+            ),
+        )
+    )
+
+    # Save the combined event stream.
+    event_stream.to_csv(
+        RAW_DIR
+        / "posts_event_combined_preview.csv",
+        index=False,
+    )
+
+    print(
+        f"Generated combined event stream "
+        f"with {len(event_stream):,} posts."
     )
 
     print(
         "Saved to "
-        f"{RAW_DIR / 'posts_event_preview.csv'}"
+        f"{RAW_DIR / 'posts_event_combined_preview.csv'}"
     )
 
-    posts = generate_normal_posts(
-        authors=authors,
-        n_posts=DEVELOPMENT_POST_COUNT,
-        start=BASELINE_START,
-        end=BASELINE_END,
-        rng=np.random.default_rng(SEED),
+    # -----------------------------------------------------------------------
+    # Update private ground truth
+    # -----------------------------------------------------------------------
+
+    ground_truth["posts"]["total_generated"] = (
+        len(baseline_posts)
+        + len(event_stream)
     )
 
-    # Save development sample.
-    posts.to_csv(
-        RAW_DIR
-        / "posts_baseline_preview.csv",
-        index=False,
-    )
+    ground_truth["posts"]["relevant_post_ids"] = [
+        item["post_id"]
+        for item in incident_post_mapping
+    ]
 
-    # Update private ground truth.
     ground_truth[
-        "posts"
-    ][
-        "total_generated"
-    ] = len(posts)
+        "incidents"
+    ] = []
+
+    for incident in INCIDENT_DEFINITIONS:
+
+        incident_mapping = [
+            item
+            for item in incident_post_mapping
+            if item[
+                "incident_id"
+            ]
+            == incident[
+                "incident_id"
+            ]
+        ]
+
+        incident_end = (
+            incident["start"]
+            + timedelta(
+                minutes=incident[
+                    "duration_minutes"
+                ]
+            )
+        )
+
+        ground_truth[
+            "incidents"
+        ].append(
+            {
+                "incident_id": incident[
+                    "incident_id"
+                ],
+
+                "incident_type": incident[
+                    "incident_type"
+                ],
+
+                "name": incident[
+                    "name"
+                ],
+
+                "start": incident[
+                    "start"
+                ].isoformat(),
+
+                "end": incident_end.isoformat(),
+
+                "true_sentiment": incident[
+                    "sentiment"
+                ],
+
+                "post_count": len(
+                    incident_mapping
+                ),
+            }
+        )
+
+    # -----------------------------------------------------------------------
+    # Save private ground truth
+    # -----------------------------------------------------------------------
 
     save_ground_truth(
         ground_truth
     )
 
+    # -----------------------------------------------------------------------
+    # Stage completion message
+    # -----------------------------------------------------------------------
+
     print(
-        f"\nGenerated "
-        f"{len(posts):,} baseline posts."
+        "\nStage 4A complete."
     )
 
     print(
-        "Saved to "
-        f"{RAW_DIR / 'posts_baseline_preview.csv'}"
+        "Baseline activity, event-day activity, "
+        "and planted incidents have been combined "
+        "into one event stream."
     )
 
     print(
-        "\nStage 2 complete."
-    )
-
-    print(
-        "Normal baseline post "
-        "generation is working."
+        "Incident labels remain in private "
+        "ground truth only."
     )
 
 
