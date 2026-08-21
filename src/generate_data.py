@@ -336,6 +336,18 @@ INCIDENT_TEXT_TEMPLATES = {
     },
 }
 
+# ===========================================================================
+# Coordinated narrative templates
+# ===========================================================================
+
+COORDINATED_NARRATIVE_TEMPLATES = [
+    "Kestrel is completely overrated. Do not waste your money.",
+    "Honestly, Kestrel is not worth the hype.",
+    "Kestrel looks impressive online but the experience is disappointing.",
+    "People should stop pretending Kestrel is actually good.",
+    "Not sure why everyone keeps recommending Kestrel.",
+    "Kestrel is getting way more hype than it deserves.",
+]
 
 # ===========================================================================
 # Reproducibility
@@ -452,6 +464,406 @@ def generate_authors(
 
     return authors
 
+# ===========================================================================
+# Coordinated author generation
+# ===========================================================================
+
+def generate_coordinated_authors(
+    authors: pd.DataFrame,
+    n_coordinated: int,
+    rng: np.random.Generator,
+) -> tuple[pd.DataFrame, list[int]]:
+    """
+    Select a subset of authors to participate in coordinated activity.
+
+    The raw authors dataframe does not receive an explicit bot/coordinated
+    label. The selected author IDs are returned separately for private
+    ground truth.
+    """
+
+    if n_coordinated > len(authors):
+        raise ValueError(
+            "Number of coordinated authors "
+            "cannot exceed total authors."
+        )
+
+    selected_indices = rng.choice(
+        len(authors),
+        size=n_coordinated,
+        replace=False,
+    )
+
+    coordinated_authors = (
+        authors.iloc[
+            selected_indices
+        ]
+        .copy()
+        .reset_index(drop=True)
+    )
+
+    coordinated_author_ids = (
+        coordinated_authors[
+            "author_id"
+        ]
+        .astype(int)
+        .tolist()
+    )
+
+    return (
+        coordinated_authors,
+        coordinated_author_ids,
+    )
+
+# ===========================================================================
+# Coordinated post generation
+# ===========================================================================
+
+def generate_coordinated_posts(
+    coordinated_authors: pd.DataFrame,
+    n_posts: int,
+    start: datetime,
+    end: datetime,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """
+    Generate coordinated posts with unequal author activity.
+
+    The coordinated group exhibits:
+    - unequal posting frequency
+    - temporal clustering
+    - repeated narrative themes
+    - cross-platform activity
+    - small variations in wording
+
+    No explicit bot/coordinated label is exposed in the raw output.
+    """
+
+    if len(coordinated_authors) == 0:
+        raise ValueError(
+            "No coordinated authors were provided."
+        )
+
+    coordinated_authors = (
+        coordinated_authors
+        .reset_index(drop=True)
+        .copy()
+    )
+
+    author_count = len(
+        coordinated_authors
+    )
+
+    # -----------------------------------------------------------------------
+    # Give each coordinated author a different activity weight.
+    #
+    # A small number of accounts will be highly active while most accounts
+    # contribute fewer posts.
+    # -----------------------------------------------------------------------
+
+    activity_weights = rng.lognormal(
+        mean=0.0,
+        sigma=1.3,
+        size=author_count,
+    )
+
+    activity_weights = (
+        activity_weights
+        / activity_weights.sum()
+    )
+
+    selected_author_indices = rng.choice(
+        author_count,
+        size=n_posts,
+        replace=True,
+        p=activity_weights,
+    )
+
+    selected_authors = (
+        coordinated_authors.iloc[
+            selected_author_indices
+        ]
+        .reset_index(drop=True)
+    )
+
+    # -----------------------------------------------------------------------
+    # Create several related bursts instead of one perfectly uniform burst.
+    # -----------------------------------------------------------------------
+
+    total_minutes = int(
+        (end - start).total_seconds() / 60
+    )
+
+    base_burst_start_offset = int(
+        total_minutes * 0.55
+    )
+
+    burst_starts = [
+        start
+        + timedelta(
+            minutes=base_burst_start_offset - 5
+        ),
+
+        start
+        + timedelta(
+            minutes=base_burst_start_offset + 12
+        ),
+
+        start
+        + timedelta(
+            minutes=base_burst_start_offset + 27
+        ),
+    ]
+
+    burst_weights = [
+        0.25,
+        0.50,
+        0.25,
+    ]
+
+    selected_bursts = rng.choice(
+        len(burst_starts),
+        size=n_posts,
+        p=burst_weights,
+    )
+
+    timestamps = []
+
+    for burst_index in selected_bursts:
+
+        burst_start = burst_starts[
+            int(burst_index)
+        ]
+
+        # Each sub-burst lasts around 12–18 minutes.
+        burst_duration_seconds = int(
+            rng.integers(
+                low=12 * 60,
+                high=18 * 60,
+            )
+        )
+
+        offset = int(
+            rng.integers(
+                low=0,
+                high=burst_duration_seconds,
+            )
+        )
+
+        timestamps.append(
+            burst_start
+            + timedelta(
+                seconds=offset
+            )
+        )
+
+    # -----------------------------------------------------------------------
+    # Platform distribution.
+    # -----------------------------------------------------------------------
+
+    platforms = rng.choice(
+        PLATFORMS,
+        size=n_posts,
+        p=[
+            0.30,
+            0.25,
+            0.25,
+            0.20,
+        ],
+    )
+
+    # -----------------------------------------------------------------------
+    # Language distribution.
+    # -----------------------------------------------------------------------
+
+    languages = rng.choice(
+        [
+            "en",
+            "hinglish",
+            "hi",
+        ],
+        size=n_posts,
+        p=[
+            0.65,
+            0.25,
+            0.10,
+        ],
+    )
+
+    # -----------------------------------------------------------------------
+    # Generate related but non-identical narrative text.
+    # -----------------------------------------------------------------------
+
+    texts = []
+
+    for language in languages:
+
+        base_text = str(
+            rng.choice(
+                COORDINATED_NARRATIVE_TEMPLATES
+            )
+        )
+
+        if language == "hinglish":
+
+            base_text = (
+                base_text
+                .replace(
+                    "Honestly,",
+                    "Honestly yaar,"
+                )
+                .replace(
+                    "Do not waste your money.",
+                    "Paise waste mat karo."
+                )
+            )
+
+        elif language == "hi":
+
+            base_text = str(
+                rng.choice(
+                    [
+                        "Kestrel ko jitna hype mil raha hai, utna deserve nahi karta.",
+                        "Kestrel ka experience itna accha nahi hai jitna log bolte hain.",
+                        "Kestrel ke hype mein mat aao.",
+                    ]
+                )
+            )
+
+        # Some posts use the shared hashtag.
+        if rng.random() < 0.65:
+
+            base_text += str(
+                rng.choice(
+                    [
+                        " #Kestrel",
+                        " #KestrelFest",
+                        " #SkipKestrel",
+                    ]
+                )
+            )
+
+        # A smaller subset uses an additional short variation.
+        if rng.random() < 0.20:
+
+            base_text += str(
+                rng.choice(
+                    [
+                        " Seriously.",
+                        " Just saying.",
+                        " IMO.",
+                        " Not worth it.",
+                    ]
+                )
+            )
+
+        texts.append(
+            base_text
+        )
+
+    # -----------------------------------------------------------------------
+    # Engagement.
+    # -----------------------------------------------------------------------
+
+    follower_counts = (
+        selected_authors[
+            "follower_count"
+        ].to_numpy()
+    )
+
+    likes = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                1,
+                follower_counts / 120,
+            ),
+        ),
+    )
+
+    reshares = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.5,
+                follower_counts / 400,
+            ),
+        ),
+    )
+
+    replies = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.3,
+                follower_counts / 600,
+            ),
+        ),
+    )
+
+    # -----------------------------------------------------------------------
+    # Geographic information.
+    # -----------------------------------------------------------------------
+
+    geo = []
+
+    for platform in platforms:
+
+        if PLATFORM_CONFIG[
+            platform
+        ]["geo_available"]:
+
+            geo.append(
+                str(
+                    rng.choice(
+                        CITIES
+                    )
+                )
+            )
+
+        else:
+            geo.append(None)
+
+    # -----------------------------------------------------------------------
+    # Temporary IDs.
+    # -----------------------------------------------------------------------
+
+    posts = pd.DataFrame(
+        {
+            "post_id": [
+                f"BOT_TEMP_{i:09d}"
+                for i in range(
+                    1,
+                    n_posts + 1,
+                )
+            ],
+
+            "platform": platforms,
+
+            "author_id": selected_authors[
+                "author_id"
+            ],
+
+            "timestamp": timestamps,
+
+            "text": texts,
+
+            "language": languages,
+
+            "geo": geo,
+
+            "follower_count": follower_counts,
+
+            "likes": likes,
+
+            "reshares": reshares,
+
+            "replies": replies,
+
+            "_coordinated_activity": True,
+        }
+    )
+
+    return posts
 
 # ===========================================================================
 # Language selection
@@ -1117,42 +1529,331 @@ def generate_incident_posts(
 
     return posts
 
+# ===========================================================================
+# Coordinated post generation
+# ===========================================================================
+
+def generate_coordinated_posts(
+    coordinated_authors: pd.DataFrame,
+    n_posts: int,
+    start: datetime,
+    end: datetime,
+    rng: np.random.Generator,
+) -> pd.DataFrame:
+    """
+    Generate posts from a coordinated author group.
+
+    The posts exhibit:
+    - unusually high posting frequency
+    - tight temporal clustering
+    - repeated narrative themes
+    - cross-platform activity
+
+    The raw output does not contain a bot/coordinated label.
+    """
+
+    if len(coordinated_authors) == 0:
+        raise ValueError(
+            "No coordinated authors were provided."
+        )
+
+    author_indices = rng.integers(
+        low=0,
+        high=len(coordinated_authors),
+        size=n_posts,
+    )
+
+    selected_authors = coordinated_authors.iloc[
+        author_indices
+    ].reset_index(drop=True)
+
+    # -----------------------------------------------------------------------
+    # Create a concentrated activity window.
+    #
+    # Instead of distributing posts uniformly across the entire event,
+    # coordinated activity happens in a relatively short burst.
+    # -----------------------------------------------------------------------
+
+    total_minutes = int(
+        (end - start).total_seconds() / 60
+    )
+
+    burst_start_offset = int(
+        total_minutes * 0.55
+    )
+
+    burst_duration_minutes = 45
+
+    burst_start = (
+        start
+        + timedelta(
+            minutes=burst_start_offset
+        )
+    )
+
+    burst_end = burst_start + timedelta(
+        minutes=burst_duration_minutes
+    )
+
+    minute_offsets = rng.integers(
+        low=0,
+        high=burst_duration_minutes * 60,
+        size=n_posts,
+    )
+
+    timestamps = [
+        burst_start
+        + timedelta(
+            seconds=int(offset)
+        )
+        for offset in minute_offsets
+    ]
+
+    # -----------------------------------------------------------------------
+    # Platforms
+    # -----------------------------------------------------------------------
+
+    platforms = rng.choice(
+        PLATFORMS,
+        size=n_posts,
+        p=[
+            0.30,
+            0.25,
+            0.25,
+            0.20,
+        ],
+    )
+
+    # -----------------------------------------------------------------------
+    # Languages
+    # -----------------------------------------------------------------------
+
+    languages = rng.choice(
+        [
+            "en",
+            "hinglish",
+            "hi",
+        ],
+        size=n_posts,
+        p=[
+            0.65,
+            0.25,
+            0.10,
+        ],
+    )
+
+    # -----------------------------------------------------------------------
+    # Generate slightly varied coordinated text.
+    # -----------------------------------------------------------------------
+
+    texts = []
+
+    for language in languages:
+
+        base_text = str(
+            rng.choice(
+                COORDINATED_NARRATIVE_TEMPLATES
+            )
+        )
+
+        if language == "hinglish":
+
+            base_text = (
+                base_text
+                .replace(
+                    "Honestly,",
+                    "Honestly yaar,"
+                )
+                .replace(
+                    "Do not waste your money.",
+                    "Paise waste mat karo."
+                )
+            )
+
+        elif language == "hi":
+
+            base_text = str(
+                rng.choice(
+                    [
+                        "Kestrel ko jitna hype mil raha hai, utna deserve nahi karta.",
+                        "Kestrel ka experience itna accha nahi hai jitna log bolte hain.",
+                        "Kestrel ke hype mein mat aao.",
+                    ]
+                )
+            )
+
+        # Occasionally add a shared hashtag.
+        if rng.random() < 0.65:
+
+            base_text += str(
+                rng.choice(
+                    [
+                        " #Kestrel",
+                        " #KestrelFest",
+                        " #SkipKestrel",
+                    ]
+                )
+            )
+
+        texts.append(base_text)
+
+    # -----------------------------------------------------------------------
+    # Engagement
+    # -----------------------------------------------------------------------
+
+    follower_counts = (
+        selected_authors[
+            "follower_count"
+        ].to_numpy()
+    )
+
+    likes = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                1,
+                follower_counts / 120,
+            ),
+        ),
+    )
+
+    reshares = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.5,
+                follower_counts / 400,
+            ),
+        ),
+    )
+
+    replies = np.maximum(
+        0,
+        rng.poisson(
+            lam=np.maximum(
+                0.3,
+                follower_counts / 600,
+            ),
+        ),
+    )
+
+    # -----------------------------------------------------------------------
+    # Geographic information
+    # -----------------------------------------------------------------------
+
+    geo = []
+
+    for platform in platforms:
+
+        if PLATFORM_CONFIG[
+            platform
+        ]["geo_available"]:
+
+            geo.append(
+                str(
+                    rng.choice(
+                        CITIES
+                    )
+                )
+            )
+
+        else:
+            geo.append(None)
+
+    # -----------------------------------------------------------------------
+    # Temporary IDs.
+    # -----------------------------------------------------------------------
+
+    posts = pd.DataFrame(
+        {
+            "post_id": [
+                f"BOT_TEMP_{i:09d}"
+                for i in range(
+                    1,
+                    n_posts + 1,
+                )
+            ],
+
+            "platform": platforms,
+
+            "author_id": selected_authors[
+                "author_id"
+            ],
+
+            "timestamp": timestamps,
+
+            "text": texts,
+
+            "language": languages,
+
+            "geo": geo,
+
+            "follower_count": follower_counts,
+
+            "likes": likes,
+
+            "reshares": reshares,
+
+            "replies": replies,
+
+            "_coordinated_activity": True,
+        }
+    )
+
+    return posts
+
 def combine_event_stream(
     normal_posts: pd.DataFrame,
     incident_posts: pd.DataFrame,
+    coordinated_posts: pd.DataFrame,
     incident_labels: list[dict],
+    coordinated_author_ids: list[int],
     rng: np.random.Generator,
-) -> tuple[pd.DataFrame, list[dict]]:
+) -> tuple[pd.DataFrame, list[dict], list[str]]:
     """
-    Combine normal event activity and planted incident posts.
+    Combine normal, incident, and coordinated event activity.
 
-    The private incident label is used to create ground truth and is then
-    removed before the event stream is saved.
+    Internal labels are used only to construct private ground truth and
+    are removed before the raw event stream is saved.
     """
 
     normal_posts = normal_posts.copy()
-
     incident_posts = incident_posts.copy()
+    coordinated_posts = coordinated_posts.copy()
 
-    # Normal posts are not associated with an incident.
+    # Normal posts have no incident/coordinated label.
     normal_posts["_incident_id"] = None
+    normal_posts["_coordinated_activity"] = False
 
-    # Combine both streams.
+    # Incident posts already carry _incident_id.
+    incident_posts["_coordinated_activity"] = False
+
+    # Coordinated posts carry only the internal coordination marker.
+    coordinated_posts["_incident_id"] = None
+
+    # -----------------------------------------------------------------------
+    # Combine everything.
+    # -----------------------------------------------------------------------
+
     combined = pd.concat(
         [
             normal_posts,
             incident_posts,
+            coordinated_posts,
         ],
         ignore_index=True,
     )
 
-    # Shuffle the combined event stream.
+    # Shuffle complete event stream.
     combined = combined.sample(
         frac=1,
         random_state=SEED,
     ).reset_index(drop=True)
 
-    # Generate final ordinary-looking IDs.
+    # -----------------------------------------------------------------------
+    # Generate final ordinary-looking post IDs.
+    # -----------------------------------------------------------------------
+
     combined["post_id"] = [
         f"P{i:09d}"
         for i in range(
@@ -1162,16 +1863,14 @@ def combine_event_stream(
     ]
 
     # -----------------------------------------------------------------------
-    # Build private ground-truth mapping.
+    # Build private incident mapping.
     # -----------------------------------------------------------------------
 
-    updated_labels = []
+    incident_post_mapping = []
 
     for _, row in combined.iterrows():
 
-        incident_id = row[
-            "_incident_id"
-        ]
+        incident_id = row["_incident_id"]
 
         if pd.notna(incident_id):
 
@@ -1179,9 +1878,7 @@ def combine_event_stream(
                 (
                     item
                     for item in incident_labels
-                    if item[
-                        "incident_id"
-                    ]
+                    if item["incident_id"]
                     == incident_id
                 ),
                 None,
@@ -1189,34 +1886,42 @@ def combine_event_stream(
 
             if incident_info is not None:
 
-                updated_labels.append(
+                incident_post_mapping.append(
                     {
-                        "post_id": row[
-                            "post_id"
+                        "post_id": row["post_id"],
+                        "incident_id": incident_info[
+                            "incident_id"
                         ],
-
-                        "incident_id":
-                            incident_info[
-                                "incident_id"
-                            ],
-
-                        "incident_type":
-                            incident_info[
-                                "incident_type"
-                            ],
+                        "incident_type": incident_info[
+                            "incident_type"
+                        ],
                     }
                 )
 
-    # Remove the private label before saving raw data.
+    # -----------------------------------------------------------------------
+    # Build private coordinated-post mapping.
+    # -----------------------------------------------------------------------
+
+    coordinated_post_ids = combined.loc[
+        combined["_coordinated_activity"] == True,
+        "post_id",
+    ].tolist()
+
+    # -----------------------------------------------------------------------
+    # Remove internal columns.
+    # -----------------------------------------------------------------------
+
     combined = combined.drop(
         columns=[
-            "_incident_id"
+            "_incident_id",
+            "_coordinated_activity",
         ]
     )
 
     return (
         combined,
-        updated_labels,
+        incident_post_mapping,
+        coordinated_post_ids,
     )
 
 # ===========================================================================
@@ -1601,6 +2306,65 @@ def main() -> None:
     )
 
     # -----------------------------------------------------------------------
+    # Coordinated-author development sample
+    # -----------------------------------------------------------------------
+
+    COORDINATED_AUTHOR_COUNT = 100
+
+    coordinated_authors, coordinated_author_ids = (
+        generate_coordinated_authors(
+            authors=authors,
+            n_coordinated=COORDINATED_AUTHOR_COUNT,
+            rng=np.random.default_rng(
+                SEED + 700
+            ),
+        )
+    )
+
+    ground_truth[
+        "authors"
+    ][
+        "automated_author_ids"
+    ] = coordinated_author_ids
+
+        # -----------------------------------------------------------------------
+    # Coordinated-post development sample
+    # -----------------------------------------------------------------------
+
+    COORDINATED_POST_COUNT = 2_000
+
+    coordinated_posts = (
+        generate_coordinated_posts(
+            coordinated_authors=coordinated_authors,
+            n_posts=COORDINATED_POST_COUNT,
+            start=EVENT_START,
+            end=EVENT_END,
+            rng=np.random.default_rng(
+                SEED + 800
+            ),
+        )
+    )
+
+    print(
+        f"Generated "
+        f"{len(coordinated_posts):,} "
+        f"coordinated posts."
+    )
+
+    print(
+        "Coordinated activity window: "
+        f"{coordinated_posts['timestamp'].min()} "
+        "to "
+        f"{coordinated_posts['timestamp'].max()}"
+    )
+
+    print(
+        f"Selected "
+        f"{len(coordinated_author_ids):,} "
+        f"coordinated authors."
+    )
+
+    # -----------------------------------------------------------------------
     # Generate planted incidents
     # -----------------------------------------------------------------------
 
@@ -1669,11 +2433,13 @@ def main() -> None:
     # Combine normal event activity + incidents
     # -----------------------------------------------------------------------
 
-    event_stream, incident_post_mapping = (
+    event_stream, incident_post_mapping, coordinated_post_ids = (
         combine_event_stream(
             normal_posts=event_posts,
             incident_posts=incident_posts,
+            coordinated_posts=coordinated_posts,
             incident_labels=incident_labels,
+            coordinated_author_ids=coordinated_author_ids,
             rng=np.random.default_rng(
                 SEED + 500
             ),
@@ -1710,6 +2476,14 @@ def main() -> None:
         item["post_id"]
         for item in incident_post_mapping
     ]
+
+    ground_truth["posts"]["coordinated_post_ids"] = (
+        coordinated_post_ids
+    )
+
+    ground_truth["authors"]["automated_author_ids"] = (
+        coordinated_author_ids
+    )
 
     ground_truth[
         "incidents"
@@ -1782,18 +2556,18 @@ def main() -> None:
     # -----------------------------------------------------------------------
 
     print(
-        "\nStage 4A complete."
+        "\nStage 5 complete."
     )
 
     print(
         "Baseline activity, event-day activity, "
-        "and planted incidents have been combined "
-        "into one event stream."
+        "and planted incidents,coordinated activity "
+        "have been combined into ine event stream."
     )
 
     print(
-        "Incident labels remain in private "
-        "ground truth only."
+        "Incident & coordination labels remain "
+        "in private ground truth only."
     )
 
 
