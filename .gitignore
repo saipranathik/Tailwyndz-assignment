@@ -4,3 +4,4 @@ __pycache__/
 data/ground_truth/
 data/raw/
 data/processed/
+data/final/
