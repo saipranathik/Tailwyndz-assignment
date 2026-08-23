@@ -615,26 +615,52 @@ def make_vss(posts: pd.DataFrame) -> pd.DataFrame:
 def evaluate_incidents(vss: pd.DataFrame, ground_truth: dict) -> pd.DataFrame:
     rows = []
 
-    # Detection is defined as the first escalation window overlapping an
-    # incident. A separate signal table remains available for manual review.
     for incident in ground_truth["incidents"]:
         start = pd.Timestamp(incident["start"])
         end = pd.Timestamp(incident["end"])
 
-        overlapping = vss[
-            (vss["window"] < end)
-            & (vss["window"] + pd.Timedelta(minutes=15) > start)
+        # ---------------------------------------------------------------
+        # Detection attribution
+        # ---------------------------------------------------------------
+        #
+        # An escalation is attributed to an incident only when the
+        # escalation STARTS during the incident window.
+        #
+        # This prevents an escalation caused by an earlier incident from
+        # being incorrectly attributed to a later overlapping incident.
+        #
+        # Example:
+        #
+        # Sponsor incident:       17:00 ---------------- 18:30
+        # Sponsor escalation:          17:30 -------- 18:15
+        # Positive decoy 2:                       18:00 -------- 18:40
+        #
+        # The 17:30 escalation is attributable to the sponsor incident,
+        # not to positive decoy 2, because it began before the decoy.
+        # ---------------------------------------------------------------
+
+        attributed = vss[
+            (vss["window"] >= start)
+            & (vss["window"] < end)
+            & (vss["escalation"])
+            & (vss["breach_run"]==3)
+        ]
+
+        prior_escalation = vss[
+            (vss["window"] < start)
             & (vss["escalation"])
         ]
 
-        if overlapping.empty:
+        if attributed.empty:
             detected = False
             first_detection = pd.NaT
             delay_minutes = np.nan
         else:
             detected = True
-            first_detection = overlapping["window"].min()
-            delay_minutes = (first_detection - start).total_seconds() / 60
+            first_detection = attributed["window"].min()
+            delay_minutes = (
+                first_detection - start
+            ).total_seconds() / 60
 
         rows.append({
             "incident_id": incident["incident_id"],
@@ -645,6 +671,7 @@ def evaluate_incidents(vss: pd.DataFrame, ground_truth: dict) -> pd.DataFrame:
             "detected": detected,
             "first_detection": first_detection,
             "detection_delay_minutes": delay_minutes,
+            "prior_escalation_at_start": not prior_escalation.empty,
         })
 
     return pd.DataFrame(rows)
