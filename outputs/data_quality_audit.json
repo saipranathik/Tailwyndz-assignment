@@ -1,0 +1,55 @@
+{
+  "rows": 1206715,
+  "columns": [
+    "post_id",
+    "platform",
+    "author_id",
+    "timestamp",
+    "text",
+    "language",
+    "geo",
+    "follower_count",
+    "likes",
+    "reshares",
+    "replies",
+    "arrival_time"
+  ],
+  "missing_percent": {
+    "post_id": 0.0,
+    "platform": 0.0,
+    "author_id": 0.0,
+    "timestamp": 0.0,
+    "text": 5.0,
+    "language": 6.0,
+    "geo": 30.12,
+    "follower_count": 4.496,
+    "likes": 0.0,
+    "reshares": 0.0,
+    "replies": 0.0,
+    "arrival_time": 97.0
+  },
+  "unique_post_ids": 1206715,
+  "duplicate_full_rows": 0,
+  "platform_counts": {
+    "platform_a": 469379,
+    "platform_b": 301888,
+    "platform_c": 245502,
+    "platform_d": 189946
+  },
+  "unparsed_timestamps": 0,
+  "parsed_timestamp_min": "2026-04-04T10:00:23+00:00",
+  "parsed_timestamp_max": "2026-04-18T23:59:59+00:00",
+  "relevance_counts": {
+    "not_target": 494668,
+    "relevant": 445555,
+    "ambiguous": 120365,
+    "irrelevant": 85791,
+    "unknown": 60336
+  },
+  "kestrel_mentions": 325831,
+  "kestrel_relevance_breakdown": {
+    "ambiguous": 120365,
+    "relevant": 119675,
+    "irrelevant": 85791
+  }
+}

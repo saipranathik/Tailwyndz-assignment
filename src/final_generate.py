@@ -430,16 +430,99 @@ def inject_mess(posts, authors, r):
     posts = pd.concat([posts, near], ignore_index=True)
     report["near_duplicate_rows"] = near_n
 
-    # Missingness, non-random by platform.
-    for col, rate, platform in [
-        ("geo", .07, "platform_b"),
-        ("text", .05, "platform_c"),
-        ("language", .06, "platform_d"),
-        ("follower_count", .045, "platform_a"),
-    ]:
-        mask = (posts["platform"].eq(platform)) & (r.random(len(posts)) < rate)
-        posts.loc[mask, col] = np.nan
-        report[f"missing_{col}"] = int(mask.sum())
+    # -----------------------------------------------------------------------
+    # Missingness
+    # -----------------------------------------------------------------------
+    # The assessment requires approximately 4-9% missingness in at least
+    # three columns, while the missingness must NOT be random.
+    #
+    # We therefore create a target overall rate for each field and make the
+    # probability higher for a particular platform/source.
+    # -----------------------------------------------------------------------
+
+    missingness_config = {
+        "text": {
+            "overall_rate": 0.05,
+            "preferred_platform": "platform_c",
+            "preferred_share": 0.70,
+        },
+        "language": {
+            "overall_rate": 0.06,
+            "preferred_platform": "platform_d",
+            "preferred_share": 0.70,
+        },
+        "follower_count": {
+            "overall_rate": 0.045,
+            "preferred_platform": "platform_a",
+            "preferred_share": 0.70,
+        },
+        "geo": {
+            "overall_rate": 0.07,
+            "preferred_platform": "platform_b",
+            "preferred_share": 0.70,
+        },
+    }
+
+    for col, config in missingness_config.items():
+
+        target_n = int(round(
+            len(posts) * config["overall_rate"]
+        ))
+
+        preferred_mask = (
+            posts["platform"]
+            .eq(config["preferred_platform"])
+            & posts[col].notna()
+        )
+
+        preferred_idx = posts.index[preferred_mask].to_numpy()
+
+        preferred_n = min(
+            int(round(target_n * config["preferred_share"])),
+            len(preferred_idx),
+        )
+
+        selected_preferred = (
+            r.choice(
+                preferred_idx,
+                size=preferred_n,
+                replace=False,
+            )
+            if preferred_n > 0
+            else np.array([], dtype=int)
+        )
+
+        remaining_n = target_n - preferred_n
+
+        other_idx = posts.index[
+            (~posts.index.isin(selected_preferred))
+            & posts[col].notna()
+        ].to_numpy()
+
+        selected_other = (
+            r.choice(
+                other_idx,
+                size=remaining_n,
+                replace=False,
+            )
+            if remaining_n > 0
+            else np.array([], dtype=int)
+        )
+
+        selected_idx = np.concatenate([
+            selected_preferred,
+            selected_other,
+        ])
+
+        posts.loc[selected_idx, col] = np.nan
+
+        report[f"missing_{col}_rows"] = int(
+            len(selected_idx)
+        )
+
+        report[f"missing_{col}_rate"] = float(
+            len(selected_idx) / len(posts)
+        )
 
     # Category spelling variation.
     posts["geo"] = posts["geo"].map(

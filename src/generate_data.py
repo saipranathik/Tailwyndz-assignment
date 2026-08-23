@@ -2189,6 +2189,149 @@ def save_ground_truth(
         f"to {output_path}"
     )
 
+# ===========================================================================
+# Development integrity checks
+# ===========================================================================
+
+def validate_development_output(
+    event_stream: pd.DataFrame,
+    ground_truth: dict,
+) -> None:
+    """
+    Validate the current development dataset.
+
+    This function checks structural integrity only. It does not clean,
+    modify, or repair the generated data.
+    """
+
+    required_columns = [
+        "post_id",
+        "platform",
+        "author_id",
+        "timestamp",
+        "text",
+        "language",
+        "geo",
+        "follower_count",
+        "likes",
+        "reshares",
+        "replies",
+    ]
+
+    missing_columns = [
+        column
+        for column in required_columns
+        if column not in event_stream.columns
+    ]
+
+    if missing_columns:
+        raise AssertionError(
+            f"Missing columns: {missing_columns}"
+        )
+
+    # IDs must be unique in the current development stream.
+    if not event_stream["post_id"].is_unique:
+        raise AssertionError(
+            "Duplicate post IDs detected."
+        )
+
+    # Internal labels must never leak into the analytical event stream.
+    forbidden_columns = [
+        "_incident_id",
+        "_coordinated_activity",
+        "is_bot",
+        "bot_flag",
+        "automated",
+    ]
+
+    leaked_columns = [
+        column
+        for column in forbidden_columns
+        if column in event_stream.columns
+    ]
+
+    if leaked_columns:
+        raise AssertionError(
+            f"Ground-truth labels leaked: {leaked_columns}"
+        )
+
+    # Ground-truth incident mappings must point to unique posts.
+    incident_ids = ground_truth[
+        "posts"
+    ][
+        "relevant_post_ids"
+    ]
+
+    if len(incident_ids) != len(
+        set(incident_ids)
+    ):
+        raise AssertionError(
+            "Duplicate incident ground-truth IDs."
+        )
+
+    coordinated_ids = ground_truth[
+        "posts"
+    ][
+        "coordinated_post_ids"
+    ]
+
+    if len(coordinated_ids) != len(
+        set(coordinated_ids)
+    ):
+        raise AssertionError(
+            "Duplicate coordinated ground-truth IDs."
+        )
+
+    # Every ground-truth post must exist in the event stream.
+    event_post_ids = set(
+        event_stream["post_id"]
+    )
+
+    missing_incident_ids = (
+        set(incident_ids)
+        - event_post_ids
+    )
+
+    missing_coordinated_ids = (
+        set(coordinated_ids)
+        - event_post_ids
+    )
+
+    if missing_incident_ids:
+        raise AssertionError(
+            "Incident ground-truth IDs missing "
+            "from event stream."
+        )
+
+    if missing_coordinated_ids:
+        raise AssertionError(
+            "Coordinated ground-truth IDs missing "
+            "from event stream."
+        )
+
+    print(
+        "\nDevelopment integrity checks: PASS"
+    )
+
+    print(
+        f"Event rows              : "
+        f"{len(event_stream):,}"
+    )
+
+    print(
+        f"Unique post IDs         : "
+        f"{event_stream['post_id'].nunique():,}"
+    )
+
+    print(
+        f"Incident ground truth   : "
+        f"{len(incident_ids):,}"
+    )
+
+    print(
+        f"Coordinated ground truth: "
+        f"{len(coordinated_ids):,}"
+    )
 
 # ===========================================================================
 # Main
@@ -2453,6 +2596,11 @@ def main() -> None:
         index=False,
     )
 
+    validate_development_output(
+    event_stream=event_stream,
+    ground_truth=ground_truth,
+    )
+
     print(
         f"Generated combined event stream "
         f"with {len(event_stream):,} posts."
@@ -2560,14 +2708,12 @@ def main() -> None:
     )
 
     print(
-        "Baseline activity, event-day activity, "
-        "and planted incidents,coordinated activity "
-        "have been combined into ine event stream."
+        "Baseline activity, event-day activity, planted incidents"
+        "and coordinated activity have been combined into one event stream."
     )
 
     print(
-        "Incident & coordination labels remain "
-        "in private ground truth only."
+        "Incident & coordination labels remain in private ground truth only."
     )
 
 

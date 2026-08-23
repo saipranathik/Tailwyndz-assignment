@@ -1,0 +1,13 @@
+{
+  "true_bot_count": 87868,
+  "predicted_bot_count": 85344,
+  "true_positive": 82795,
+  "false_positive": 2549,
+  "false_negative": 5073,
+  "true_negative": 1116298,
+  "precision": 0.9701326396700413,
+  "recall": 0.9422656712341239,
+  "false_positive_rate": 0.002278238222026783,
+  "false_negative_rate": 0.057734328765876086,
+  "error_rate": 0.006316321583803963
+}
