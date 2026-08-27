@@ -623,20 +623,13 @@ def evaluate_incidents(vss: pd.DataFrame, ground_truth: dict) -> pd.DataFrame:
         # Detection attribution
         # ---------------------------------------------------------------
         #
-        # An escalation is attributed to an incident only when the
-        # escalation STARTS during the incident window.
+        # Incident attribution is evaluated separately from the VSS rules.
+        # An incident is considered detected when a NEW escalation begins
+        # during the incident window.
         #
-        # This prevents an escalation caused by an earlier incident from
-        # being incorrectly attributed to a later overlapping incident.
-        #
-        # Example:
-        #
-        # Sponsor incident:       17:00 ---------------- 18:30
-        # Sponsor escalation:          17:30 -------- 18:15
-        # Positive decoy 2:                       18:00 -------- 18:40
-        #
-        # The 17:30 escalation is attributable to the sponsor incident,
-        # not to positive decoy 2, because it began before the decoy.
+        # breach_run == 3 identifies the first escalation window.
+        # This prevents an escalation that began before an incident from
+        # being incorrectly attributed to that later incident.
         # ---------------------------------------------------------------
 
         attributed = vss[
@@ -715,6 +708,106 @@ def main():
 
     posts["parsed_timestamp"] = parsed_ts
 
+    # -------------------------------------------------------------------
+    # Extended data-quality audit
+    # -------------------------------------------------------------------
+
+    # Exact duplicate events.
+    # The generator changes post_id to *_DUP, so post_id is excluded.
+    exact_duplicate_cols = [
+        "platform",
+        "author_id",
+        "timestamp",
+        "text",
+        "language",
+        "geo",
+        "follower_count",
+        "likes",
+        "reshares",
+        "replies",
+        "arrival_time",
+    ]
+
+    quality["exact_duplicate_event_rows"] = int(
+        posts.duplicated(
+            subset=exact_duplicate_cols,
+            keep=False,
+        ).sum()
+    )
+
+    # Impossible values injected by the generator.
+    quality["impossible_likes"] = int(
+        pd.to_numeric(posts["likes"], errors="coerce").lt(0).sum()
+    )
+
+    quality["extreme_replies"] = int(
+        pd.to_numeric(posts["replies"], errors="coerce").gt(1_000_000).sum()
+    )
+
+    quality["impossible_followers"] = int(
+        pd.to_numeric(
+            posts["follower_count"],
+            errors="coerce",
+        ).lt(0).sum()
+    )
+
+    # Late-arriving events.
+    # arrival_time is populated only for deliberately late rows.
+    arrival_ts = pd.to_datetime(
+        posts["arrival_time"],
+        errors="coerce",
+        utc=True,
+    )
+
+    quality["late_arriving_rows"] = int(
+        (
+            arrival_ts.notna()
+            & posts["parsed_timestamp"].notna()
+            & (arrival_ts > posts["parsed_timestamp"])
+        ).sum()
+    )
+
+    # Timestamp representation audit.
+    raw_ts = (
+        posts["timestamp"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+
+    quality["timestamp_format_counts"] = {
+        "epoch_ms": int(
+            raw_ts.str.fullmatch(
+                r"\d{12,14}",
+                na=False,
+            ).sum()
+        ),
+        "iso": int(
+            raw_ts.str.match(
+                r"^\d{4}-\d{2}-\d{2}",
+                na=False,
+            ).sum()
+        ),
+        "ymd_slash": int(
+            raw_ts.str.fullmatch(
+                r"\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}",
+                na=False,
+            ).sum()
+        ),
+        "dmy_dash": int(
+            raw_ts.str.fullmatch(
+                r"\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}",
+                na=False,
+            ).sum()
+        ),
+        "mdy_dash": int(
+            raw_ts.str.fullmatch(
+                r"\d{2}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}",
+                na=False,
+            ).sum()
+        ),
+    }
+
     # Relevance.
     print("Classifying relevance...")
     posts["relevance"] = posts["text"].map(classify_relevance)
@@ -732,11 +825,69 @@ def main():
         .to_dict()
     )
 
+    quality["geo_raw_variants"] = (
+        posts["geo"]
+        .dropna()
+        .astype(str)
+        .value_counts()
+        .to_dict()
+    )
+
+    # Load authors from the workbook.
+
     # Load authors from the workbook.
     print("Loading authors...")
     authors = pd.read_excel(
         AUTHORS_PATH,
         sheet_name="authors",
+    )
+
+    # Unmatched author IDs.
+    post_author_ids = pd.to_numeric(
+        posts["author_id"],
+        errors="coerce",
+    )
+
+    quality["author_category_variants"] = {
+        "device_type": (
+            authors["device_type"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .to_dict()
+        ),
+        "channel": (
+            authors["channel"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .to_dict()
+        ),
+        "country": (
+            authors["country"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .to_dict()
+        ),
+        "city": (
+            authors["city"]
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .to_dict()
+        ),
+    }
+
+    reference_author_ids = set(
+        pd.to_numeric(
+            authors["author_id"],
+            errors="coerce",
+        ).dropna()
+    )
+
+    quality["unmatched_author_id_rows"] = int(
+        (~post_author_ids.isin(reference_author_ids)).sum()
     )
 
     # Bot detection.
@@ -784,6 +935,7 @@ def main():
 
     # Incident evaluation.
     incident_eval = evaluate_incidents(vss, ground_truth)
+    
 
     # Save compact analytical outputs.
     quality_path = OUTPUT_DIR / "data_quality_audit.json"

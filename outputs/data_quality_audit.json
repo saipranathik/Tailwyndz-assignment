@@ -39,6 +39,18 @@
   "unparsed_timestamps": 0,
   "parsed_timestamp_min": "2026-04-04T10:00:23+00:00",
   "parsed_timestamp_max": "2026-04-18T23:59:59+00:00",
+  "exact_duplicate_event_rows": 2190,
+  "impossible_likes": 1171,
+  "extreme_replies": 1172,
+  "impossible_followers": 1172,
+  "late_arriving_rows": 36201,
+  "timestamp_format_counts": {
+    "epoch_ms": 216412,
+    "iso": 338655,
+    "ymd_slash": 217368,
+    "dmy_dash": 217008,
+    "mdy_dash": 217272
+  },
   "relevance_counts": {
     "not_target": 494668,
     "relevant": 445555,
@@ -51,5 +63,66 @@
     "ambiguous": 120365,
     "relevant": 119675,
     "irrelevant": 85791
-  }
+  },
+  "geo_raw_variants": {
+    "mumbai": 56732,
+    "HYDERABAD": 56391,
+    "Madras": 56350,
+    "Delhi": 56288,
+    "New Delhi": 56282,
+    "Bangalore": 56270,
+    "Hyd": 56257,
+    "CHENNAI": 56234,
+    "Hyderabad": 56222,
+    "MUMBAI": 56222,
+    "Chennai": 56219,
+    "BENGALURU": 56214,
+    "Bengaluru": 55948,
+    "Mumbai": 55815,
+    "DELHI": 55811
+  },
+  "author_category_variants": {
+    "device_type": {
+      "web": 12663,
+      "android": 12601,
+      "Mobile": 12526,
+      "iOS": 12526,
+      "MOBILE": 12367,
+      "mobile": 12317
+    },
+    "channel": {
+      "SOCIAL": 15259,
+      "social": 15044,
+      "Social": 14931,
+      "social media": 14922,
+      "SM": 14844
+    },
+    "country": {
+      "DE": 10815,
+      "INDIA": 10786,
+      "IN": 10770,
+      "Portugal": 10723,
+      "Germany": 10702,
+      "India": 10677,
+      "PT": 10527
+    },
+    "city": {
+      "Chennai": 5100,
+      "mumbai": 5096,
+      "Mumbai": 5084,
+      "Delhi": 5063,
+      "Bangalore": 5052,
+      "DELHI": 5027,
+      "MUMBAI": 5014,
+      "Hyderabad": 5000,
+      "Madras": 4998,
+      "New Delhi": 4964,
+      "BENGALURU": 4962,
+      "CHENNAI": 4928,
+      "Bengaluru": 4921,
+      "Hyd": 4901,
+      "HYDERABAD": 4890
+    }
+  },
+  "unmatched_author_id_rows": 46863
 }
