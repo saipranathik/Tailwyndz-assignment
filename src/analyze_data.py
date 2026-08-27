@@ -303,8 +303,9 @@ NEGATIVE = {
     "failure", "failed", "broken", "crush", "crushed", "jammed",
     "stuck", "frustrated", "ridiculous", "angry", "disappointing",
     "disappointed", "painful", "loss", "lost", "ruining", "mess",
-    "not", "down", "outage", "can't", "cannot",
-    "बुरा", "खराब", "परेशान", "नहीं",
+    "down", "outage", 
+    "bekaar", "kharab",
+    "बुरा", "खराब", "परेशान",
     "terrível", "falha", "ruim",
     "schlecht", "schlimm", "fehler",
 }
