@@ -16,22 +16,20 @@ The pipeline addresses:
 
 ---
 
-## Project structure
+## Project Structure
 
 ```text
-.
+Tailwyndz Assignment/
 ├── data/
 │   ├── final/
-│   │   ├── authors_and_reference.xlsx
-│   │   ├── brand_terms.csv
-│   │   ├── event_timeline.csv
-│   │   ├── posts.csv
-│   │   └── posts.jsonl
 │   ├── ground_truth/
-│   │   ├── final_ground_truth.json
-│   │   ├── generation_report.json
-│   │   └── generation_state.json
+│   ├── processed/
 │   └── raw/
+│
+├── docs/
+│   └── memo/
+│       └── memo.pdf
+│
 ├── outputs/
 │   ├── bot_evaluation.json
 │   ├── data_quality_audit.json
@@ -40,6 +38,10 @@ The pipeline addresses:
 │   ├── scored_sample.csv
 │   ├── sentiment_summary.json
 │   └── vss_15min.csv
+│
+├── presentation/
+│   └── Forty-Minutes-Into-The-Set.pptx
+│
 ├── src/
 │   ├── analyze_data.py
 │   ├── content_bot_test.py
@@ -47,13 +49,15 @@ The pipeline addresses:
 │   ├── final_generate.py
 │   ├── generate_data.py
 │   └── signal_test.py
+│
 ├── tests/
 │   └── test_vss.py
-├── assumptions.md
+│
+├── .gitignore
 ├── approach_tried.md
-├── requirements.txt
-└── README.md
-
+├── assumptions.md
+├── README.md
+└── requirements.txt
 ---
 
 ## Environment
@@ -64,6 +68,8 @@ Install the pinned dependencies with:
 
 ```bash
 pip install -r requirements.txt
+
+---
 
 ## AI Usage
 
