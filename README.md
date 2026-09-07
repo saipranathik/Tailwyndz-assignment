@@ -1,0 +1,66 @@
+# Tailwyndz Propel Lateral Drive 2026 — Assessment 4
+
+## Forty Minutes Into The Set
+
+This project analyzes a synthetic social-media dataset from a live event and builds a lightweight command-centre monitoring pipeline.
+
+The pipeline addresses:
+
+1. Data-quality auditing
+2. Kestrel/event relevance filtering
+3. Automated-traffic detection
+4. Multilingual sentiment scoring
+5. Volume-Sentiment Shift (VSS) calculation
+6. Sustained negative-signal detection
+7. Evaluation against planted incident ground truth
+
+---
+
+## Project structure
+
+```text
+.
+├── data/
+│   ├── final/
+│   │   ├── authors_and_reference.xlsx
+│   │   ├── brand_terms.csv
+│   │   ├── event_timeline.csv
+│   │   ├── posts.csv
+│   │   └── posts.jsonl
+│   ├── ground_truth/
+│   │   ├── final_ground_truth.json
+│   │   ├── generation_report.json
+│   │   └── generation_state.json
+│   └── raw/
+├── outputs/
+│   ├── bot_evaluation.json
+│   ├── data_quality_audit.json
+│   ├── incident_evaluation.csv
+│   ├── relevance_summary.json
+│   ├── scored_sample.csv
+│   ├── sentiment_summary.json
+│   └── vss_15min.csv
+├── src/
+│   ├── analyze_data.py
+│   ├── content_bot_test.py
+│   ├── coordination_test.py
+│   ├── final_generate.py
+│   ├── generate_data.py
+│   └── signal_test.py
+├── tests/
+│   └── test_vss.py
+├── assumptions.md
+├── approach_tried.md
+├── requirements.txt
+└── README.md
+
+---
+
+## Environment
+
+Python 3 is required.
+
+Install the pinned dependencies with:
+
+```bash
+pip install -r requirements.txt

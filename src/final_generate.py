@@ -570,7 +570,7 @@ def inject_mess(posts, authors, r):
     arrival = pd.Timestamp(EVENT_END) + pd.to_timedelta(
         r.integers(9*24*3600 + 1, 14*24*3600, late_n), unit="s"
     )
-    posts["arrival_time"] = pd.NaT
+    posts["arrival_time"] = pd.Series(pd.NaT, index=posts.index, dtype="datetime64[ns, UTC]")
     posts.loc[late_idx, "arrival_time"] = arrival
     report["late_arriving_rows"] = late_n
 

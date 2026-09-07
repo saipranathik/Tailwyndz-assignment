@@ -594,15 +594,34 @@ def make_vss(posts: pd.DataFrame) -> pd.DataFrame:
     windows = windows.sort_values(["market", "window"]).reset_index(drop=True)
 
     # Consecutive breach windows.
+    # A breach run continues only when the current window is exactly
+    # 15 minutes after the previous window for the same market.
+    # This prevents missing windows from being counted as consecutive.
     windows["breach_run"] = 0
+
     for market, idx in windows.groupby("market").groups.items():
         run = 0
+        previous_window = None
+
         for i in idx:
-            if windows.loc[i, "signal"] == "BREACH":
-                run += 1
+            current_window = windows.loc[i, "window"]
+            current_signal = windows.loc[i, "signal"]
+
+            is_contiguous = (
+                previous_window is not None
+                and current_window - previous_window == pd.Timedelta(minutes=15)
+            )
+
+            if current_signal == "BREACH":
+                if is_contiguous:
+                    run += 1
+                else:
+                    run = 1
             else:
                 run = 0
+
             windows.loc[i, "breach_run"] = run
+            previous_window = current_window
 
     windows["escalation"] = windows["breach_run"] >= 3
 
