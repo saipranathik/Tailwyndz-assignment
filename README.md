@@ -10,7 +10,7 @@ The pipeline addresses:
 2. Kestrel/event relevance filtering
 3. Automated-traffic detection
 4. Multilingual sentiment scoring
-5. Volume-Sentiment Shift (VSS) calculation
+5. Verified-Sentiment Shift (VSS) calculation
 6. Sustained negative-signal detection
 7. Evaluation against planted incident ground truth
 
@@ -58,8 +58,8 @@ Tailwyndz Assignment/
 ├── assumptions.md
 ├── README.md
 └── requirements.txt
+```
 
-```markdown
 > **Note:** `data/ground_truth/` contains private evaluation data and is excluded from version control. It is used locally for evaluation only.
 
 ---
@@ -72,6 +72,7 @@ Install the pinned dependencies with:
 
 ```bash
 pip install -r requirements.txt
+```
 
 ---
 
@@ -79,13 +80,6 @@ pip install -r requirements.txt
 
 AI tools were used as development assistance during this assessment.
 
-- **ChatGPT** — used for code debugging, identifying implementation issues,
-  suggesting test cases, reviewing analysis logic, and helping structure
-  documentation and presentation/memo content.
-- AI assistance was used as a support tool rather than as a substitute for
-  the analysis. Final implementation decisions, thresholds, evaluation
-  methodology, results, assumptions, and interpretations were reviewed
-  against the assessment requirements and the generated dataset.
-- No paid AI APIs or proprietary AI services were used in the analysis
-  pipeline.
-
+- **ChatGPT** — used for code debugging, identifying implementation issues, suggesting test cases, reviewing analysis logic, and helping structure documentation and presentation/memo content.
+- AI assistance was used as a support tool rather than as a substitute for the analysis. Final implementation decisions, thresholds, evaluation methodology, results, assumptions, and interpretations were reviewed against the assessment requirements and the generated dataset.
+- No paid AI APIs or proprietary AI services were used in the analysis pipeline.
