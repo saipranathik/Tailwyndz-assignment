@@ -64,3 +64,17 @@ Install the pinned dependencies with:
 
 ```bash
 pip install -r requirements.txt
+
+## AI Usage
+
+AI tools were used as development assistance during this assessment.
+
+- **ChatGPT** — used for code debugging, identifying implementation issues,
+  suggesting test cases, reviewing analysis logic, and helping structure
+  documentation and presentation/memo content.
+- AI assistance was used as a support tool rather than as a substitute for
+  the analysis. Final implementation decisions, thresholds, evaluation
+  methodology, results, assumptions, and interpretations were reviewed
+  against the assessment requirements and the generated dataset.
+- No paid AI APIs or proprietary AI services were used in the analysis
+  pipeline.
