@@ -58,6 +58,10 @@ Tailwyndz Assignment/
 ├── assumptions.md
 ├── README.md
 └── requirements.txt
+
+```markdown
+> **Note:** `data/ground_truth/` contains private evaluation data and is excluded from version control. It is used locally for evaluation only.
+
 ---
 
 ## Environment
@@ -84,3 +88,4 @@ AI tools were used as development assistance during this assessment.
   against the assessment requirements and the generated dataset.
 - No paid AI APIs or proprietary AI services were used in the analysis
   pipeline.
+
