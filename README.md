@@ -224,6 +224,9 @@ It provides a historical event simulation showing:
 6. consecutive breach count; and
 7. selected-market investigation details.
 
+<img width="1853" height="692" alt="image" src="https://github.com/user-attachments/assets/b47ea5ef-dc4e-4d16-b0e5-f571556590f4" />
+
+
 The interface does not use a live API or pretend to be a production real-time system. It demonstrates how the analytical outputs could be surfaced to a command centre.
 
 Run it with:
