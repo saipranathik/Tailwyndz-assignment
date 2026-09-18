@@ -30,10 +30,8 @@ The system is intended as an early-warning layer for human review, not as an aut
 
 The final frozen dataset contains:
 
-1,206,715 posts
-75,000 authors
-4 platforms
-325,831 Kestrel mentions
+1,206,715 - posts; 75,000 - authors; 4 - platforms; 325,831 - Kestrel mentions
+
 Mixed timestamp formats, missing fields, late-arriving records and other deliberately injected data-quality problems
 14 days of pre-event activity used to establish the VSS baseline
 One 14-hour event period containing planted incidents and decoy events
@@ -42,24 +40,17 @@ The private ground-truth data is kept separately and excluded from the public re
 
 **What the Pipeline Does**
 
-Raw social posts
-      ↓
-Data-quality audit
-      ↓
-Relevance filtering
-      ↓
-Automated-traffic detection
-      ↓
-Sentiment classification
-      ↓
-Verified Sentiment Shift (VSS)
-      ↓
-15-minute signal evaluation
-      ↓
-Incident evaluation
-      ↓
-Command-centre output
-
+```mermaid
+flowchart TD
+    A[Raw Social Posts] --> B[Data Quality Audit]
+    B --> C[Relevance Filtering]
+    C --> D[Automated Traffic Detection]
+    D --> E[Sentiment Classification]
+    E --> F[Verified Sentiment Shift - VSS]
+    F --> G[15-Minute Signal Evaluation]
+    G --> H[Incident Evaluation]
+    H --> I[Command Centre Output]
+```
 
 ## 1. Data Quality
 
@@ -86,11 +77,12 @@ The word Kestrel is intentionally ambiguous in the dataset and can refer to unre
 
 Of 325,831 Kestrel mentions:
 
-Classification        Posts
-
-Confirmed relevant    119,675
-Ambiguous             120,365
-Irrelevant            85,791
+| Classification | Posts |
+|---|---:|
+| Confirmed relevant | 119,675 |
+| Ambiguous | 120,365 |
+| Irrelevant | 85,791 |
+| **Total Kestrel mentions** | **325,831** |
 
 Therefore, 206,156 Kestrel mentions (63.3%) were not admitted to the confirmed-relevance VSS set.
 
@@ -106,13 +98,13 @@ and monitoring/summary language.
 
 Evaluation against the private ground truth:
 
-Metric                     Result
-
-True automated posts       87,868
-Predicted automated posts  85,344
-Precision                  97.0%
-Recall                     94.2%
-Error rate                 0.632%
+| Metric | Result |
+|---|---:|
+| True automated posts | 87,868 |
+| Predicted automated posts | 85,344 |
+| Precision | 97.0% |
+| Recall | 94.2% |
+| Error rate | 0.632% |
 
 Several alternative approaches were tested and rejected because their false-positive rates were too high. The rejected experiments are documented in approach_tried.md.
 
@@ -130,11 +122,11 @@ selected sarcasm patterns
 
 **Results:**
 
-Sentiment    Posts
-
-Positive    203,161
-Neutral     134,520
-Negative    69,546
+| Sentiment | Posts |
+|----|----:|
+|Positive | 203,161 |
+|Neutral | 134,520 |
+|Negative | 69,546 |
 
 A known limitation is Hindi negation, where some constructions are still misclassified.
 
@@ -161,17 +153,11 @@ enter the VSS calculation.
 
 **Decision rules**
 
-< 220 qualifying posts
-        ↓
-NO SIGNAL
+< 220 qualifying posts -> NO SIGNAL
 
-VSS ≤ −14
-        ↓
-BREACH
+VSS ≤ −14 -> **BREACH**
 
-VSS ≤ −14 for 3 consecutive 15-minute windows
-        ↓
-ESCALATE
+VSS ≤ −14 for 3 consecutive 15-minute windows -> **ESCALATE**
 
 A single breach does not trigger escalation, and raw post volume alone never acts as a sentiment signal.
 
@@ -195,14 +181,14 @@ The VSS output is stored in:
 
 The final signal was tested against six planted events:
 
-Incident                 Result
-
-Queue crush              Missed
-Sound failure            Missed
-Sponsor announcement     Detected — +30 min lead time
-Payment outage           Missed
-Positive decoy 1         Ignored
-Positive decoy 2         Ignored
+|Incident | Result |
+|---|---:|
+| Queue crush | Missed |
+| Sound failure | Missed |
+| Sponsor announcement | Detected — +30 min lead time |
+| Payment outage | Missed |
+| Positive decoy 1 | Ignored |
+| Positive decoy 2 | Ignored |
 
 ## Overall:
 
