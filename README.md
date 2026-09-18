@@ -10,49 +10,37 @@ The assessment asks for a social-listening system for Kestrel Festival that can 
 
 Kestrel's existing social dashboard relies heavily on post volume and a positive/negative split. The problem is that this creates two opposite risks:
 
-False alarms: unrelated conversations, automated traffic and short-lived spikes can make the dashboard appear to show an incident when nothing is wrong.
+**False alarms:** unrelated conversations, automated traffic and short-lived spikes can make the dashboard appear to show an incident when nothing is wrong.
 
-Missed incidents: genuine problems may generate too little social activity, may be expressed neutrally, or may not contain enough usable market information.
+**Missed incidents:** genuine problems may generate too little social activity, may be expressed neutrally, or may not contain enough usable market information.
 
 The goal of this project was therefore not simply to classify posts as positive or negative. The goal was to build a more trustworthy early-warning layer by:
 
-checking and normalising messy incoming data;
-
-separating relevant Kestrel/event conversation from ambiguous or unrelated mentions;
-
-detecting likely automated traffic;
-
-scoring sentiment while handling practical language issues such as negation, sarcasm, emojis and mixed-language text;
-
-comparing current sentiment with a meaningful market-specific baseline using Verified Sentiment Shift (VSS);
-
-suppressing weak signals and requiring sustained evidence before escalation; and
-
-evaluating the resulting signal against the planted incidents in the assessment.
+1. checking and normalising messy incoming data;
+2. separating relevant Kestrel/event conversation from ambiguous or unrelated mentions;
+3. detecting likely automated traffic;
+4. scoring sentiment while handling practical language issues such as negation, sarcasm, emojis and mixed-language text;
+5. comparing current sentiment with a meaningful market-specific baseline using Verified Sentiment Shift (VSS);
+6. suppressing weak signals and requiring sustained evidence before escalation; and
+7. evaluating the resulting signal against the planted incidents in the assessment.
 
 The system is intended as an early-warning layer for human review, not as an autonomous incident-diagnosis system.
 
-Dataset
+## Dataset
 
 The final frozen dataset contains:
 
 1,206,715 posts
-
 75,000 authors
-
 4 platforms
-
 325,831 Kestrel mentions
-
 Mixed timestamp formats, missing fields, late-arriving records and other deliberately injected data-quality problems
-
 14 days of pre-event activity used to establish the VSS baseline
-
 One 14-hour event period containing planted incidents and decoy events
 
 The private ground-truth data is kept separately and excluded from the public repository.
 
-What the Pipeline Does
+**What the Pipeline Does**
 
 Raw social posts
       ↓
@@ -73,35 +61,26 @@ Incident evaluation
 Command-centre output
 
 
-**1. Data Quality**
+## 1. Data Quality
 
 The analysis first checks whether the raw data can be trusted enough to support downstream calculations.
 
 Key findings:
 
 1,206,715 rows
-
 5 timestamp formats
-
 0 unparsed timestamps after normalisation
-
 36,201 late-arriving records
-
 46,863 unmatched author IDs
-
 30.12% missing geography
-
 2,190 exact duplicate event rows
-
 1,171 impossible like values
-
 1,172 extreme reply values
-
 1,172 impossible follower values
 
 The purpose of this stage is to make data limitations explicit before sentiment or alerting decisions are made.
 
-**2. Relevance Filtering**
+## 2. Relevance Filtering
 
 The word Kestrel is intentionally ambiguous in the dataset and can refer to unrelated subjects.
 
@@ -117,7 +96,7 @@ Therefore, 206,156 Kestrel mentions (63.3%) were not admitted to the confirmed-r
 
 This prevents a keyword match from being treated as proof that a post is about the festival.
 
-**3. Automated Traffic Detection**
+## 3. Automated Traffic Detection
 
 The final detector identifies likely automated traffic at the post level, using transparent content-based signals including:
 
@@ -137,7 +116,7 @@ Error rate                 0.632%
 
 Several alternative approaches were tested and rejected because their false-positive rates were too high. The rejected experiments are documented in approach_tried.md.
 
-**4. Sentiment**
+## 4. Sentiment
 
 The sentiment layer uses a lightweight rule-based approach covering:
 
@@ -149,7 +128,7 @@ emojis
 negation patterns
 selected sarcasm patterns
 
-Results:
+**Results:**
 
 Sentiment    Posts
 
@@ -159,7 +138,7 @@ Negative    69,546
 
 A known limitation is Hindi negation, where some constructions are still misclassified.
 
-**5. Verified Sentiment Shift (VSS)**
+## 5. Verified Sentiment Shift (VSS)
 
 VSS asks:
 
@@ -167,23 +146,20 @@ Is sentiment unusually negative for this market compared with its own recent bas
 
 The calculation is:
 
-VSS = (current 15-minute net sentiment) − (14-day pre-event net sentiment for the same market)
+**VSS = (current 15-minute net sentiment) − (14-day pre-event net sentiment for the same market)**
 
 Where:
 
-net sentiment = % positive − % negative
+**net sentiment = % positive − % negative**
 
 Only posts that are:
 
 classified as human;
-
 confirmed relevant to Kestrel/the event; and
-
 associated with a known market
-
 enter the VSS calculation.
 
-Decision rules
+**Decision rules**
 
 < 220 qualifying posts
         ↓
@@ -199,7 +175,7 @@ ESCALATE
 
 A single breach does not trigger escalation, and raw post volume alone never acts as a sentiment signal.
 
-**VSS Results**
+## VSS Results
 
 Across the event:
 
@@ -228,47 +204,36 @@ Payment outage           Missed
 Positive decoy 1         Ignored
 Positive decoy 2         Ignored
 
-Overall:
+## Overall:
 
 1 / 6 planted incidents detected
-
 1 / 4 negative incidents detected
-
 0 false escalations on the two positive decoys
 
 The evaluation shows that the system can surface sustained negative social shifts, but it is too selective to function as a standalone incident detector.
 
 The missed incidents also reveal important structural limitations:
 
-an incident may not generate enough relevant social activity;
-
-a short event may not persist for three consecutive windows;
-
-an operational problem may be expressed neutrally;
-
-missing market information can prevent market-level scoring.
+1. an incident may not generate enough relevant social activity;
+2. a short event may not persist for three consecutive windows;
+3. an operational problem may be expressed neutrally;
+4. missing market information can prevent market-level scoring.
 
 These are treated as system limitations and plausible failure modes rather than assumed root causes for every individual miss.
 
-**Streamlit Command-Centre Prototype**
+## Streamlit Command-Centre Prototype
 
 A lightweight Streamlit interface was added as a presentation layer over the frozen VSS output.
 
 It provides a historical event simulation showing:
 
-simulation time;
-
-all five markets;
-
-market-level VSS;
-
-escalation/breach/normal state;
-
-qualifying post volume;
-
-consecutive breach count; and
-
-selected-market investigation details.
+1. simulation time;
+2. all five markets;
+3. market-level VSS;
+4. escalation/breach/normal state;
+5. qualifying post volume;
+6. consecutive breach count; and
+7. selected-market investigation details.
 
 The interface does not use a live API or pretend to be a production real-time system. It demonstrates how the analytical outputs could be surfaced to a command centre.
 
@@ -321,35 +286,23 @@ Running the Analysis
 
 Create and activate the pinned virtual environment, install the requirements, then run:
 
-python src/analyze_data.py
+`python src/analyze_data.py` - The analysis writes the structured results to outputs/.
 
-The analysis writes the structured results to outputs/.
+Run the VSS unit test with: `python -m tests.test_vss`
 
-Run the VSS unit test with:
-
-python -m tests.test_vss
-
-Run the command-centre demonstration with:
-
-streamlit run app.py
+Run the command-centre demonstration with: `streamlit run app.py`
 
 **Outputs**
 
 The main generated outputs are:
 
-data_quality_audit.json — raw data-quality findings
-
-relevance_summary.json — relevance classification counts
-
-bot_evaluation.json — automated-traffic evaluation
-
-sentiment_summary.json — sentiment totals
-
-vss_15min.csv — 15-minute VSS results
-
-incident_evaluation.csv — planted-incident evaluation
-
-scored_sample.csv — scored sample for inspection
+`data_quality_audit.json` — raw data-quality findings
+`relevance_summary.json` — relevance classification counts
+`bot_evaluation.json` — automated-traffic evaluation
+`sentiment_summary.json` — sentiment totals
+`vss_15min.csv` — 15-minute VSS results
+`incident_evaluation.csv` — planted-incident evaluation
+`scored_sample.csv` — scored sample for inspection
 
 ## Documentation
 
