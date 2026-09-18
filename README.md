@@ -252,7 +252,7 @@ Tailwyndz Assignment/
 │   ├── sentiment_summary.json
 │   └── vss_15min.csv
 ├── presentation/
-│   └── Forty-Minutes-Into-The-Set.pptx
+│   └── Tailwyndz PPT.pptx
 ├── src/
 │   ├── analyze_data.py
 │   ├── content_bot_test.py
