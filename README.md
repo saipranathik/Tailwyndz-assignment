@@ -30,7 +30,10 @@ The system is intended as an early-warning layer for human review, not as an aut
 
 The final frozen dataset contains:
 
-1,206,715 - posts; 75,000 - authors; 4 - platforms; 325,831 - Kestrel mentions
+- 1,206,715 posts
+- 75,000 authors 
+- 4 platforms
+- 325,831 Kestrel mentions
 
 Mixed timestamp formats, missing fields, late-arriving records and other deliberately injected data-quality problems
 14 days of pre-event activity used to establish the VSS baseline
@@ -58,16 +61,16 @@ The analysis first checks whether the raw data can be trusted enough to support 
 
 Key findings:
 
-1,206,715 rows
-5 timestamp formats
-0 unparsed timestamps after normalisation
-36,201 late-arriving records
-46,863 unmatched author IDs
-30.12% missing geography
-2,190 exact duplicate event rows
-1,171 impossible like values
-1,172 extreme reply values
-1,172 impossible follower values
+- 1,206,715 rows;
+- 5 timestamp formats;
+- 0 unparsed timestamps after normalisation;
+- 36,201 late-arriving records;
+- 46,863 unmatched author IDs;
+- 30.12% missing geography;
+- 2,190 exact duplicate event rows;
+- 1,171 impossible like values;
+- 1,172 extreme reply values;
+- 1,172 impossible follower values;
 
 The purpose of this stage is to make data limitations explicit before sentiment or alerting decisions are made.
 
@@ -92,9 +95,9 @@ This prevents a keyword match from being treated as proof that a post is about t
 
 The final detector identifies likely automated traffic at the post level, using transparent content-based signals including:
 
-promotional/spam language;
-negative amplification language; 
-and monitoring/summary language.
+- promotional/spam language;
+- negative amplification language; 
+- and monitoring/summary language.
 
 Evaluation against the private ground truth:
 
@@ -112,13 +115,13 @@ Several alternative approaches were tested and rejected because their false-posi
 
 The sentiment layer uses a lightweight rule-based approach covering:
 
-English
-Hindi/Devanagari
-Hinglish
-Portuguese/German patterns
-emojis
-negation patterns
-selected sarcasm patterns
+- English
+- Hindi/Devanagari
+- Hinglish
+- Portuguese/German patterns
+- emojis
+- negation patterns
+- selected sarcasm patterns
 
 **Results:**
 
@@ -146,10 +149,10 @@ Where:
 
 Only posts that are:
 
-classified as human;
-confirmed relevant to Kestrel/the event; and
-associated with a known market
-enter the VSS calculation.
+- classified as human;
+- confirmed relevant to Kestrel/the event; and
+- associated with a known market
+- enter the VSS calculation.
 
 **Decision rules**
 
@@ -192,9 +195,9 @@ The final signal was tested against six planted events:
 
 ## Overall:
 
-1 / 6 planted incidents detected
-1 / 4 negative incidents detected
-0 false escalations on the two positive decoys
+- 1 / 6 planted incidents detected
+- 1 / 4 negative incidents detected
+- 0 false escalations on the two positive decoys
 
 The evaluation shows that the system can surface sustained negative social shifts, but it is too selective to function as a standalone incident detector.
 
@@ -272,7 +275,7 @@ Running the Analysis
 
 Create and activate the pinned virtual environment, install the requirements, then run:
 
-`python src/analyze_data.py` - The analysis writes the structured results to outputs/.
+`python src/analyze_data.py` - The analysis writes the structured results to `outputs/`.
 
 Run the VSS unit test with: `python -m tests.test_vss`
 
@@ -282,23 +285,23 @@ Run the command-centre demonstration with: `streamlit run app.py`
 
 The main generated outputs are:
 
-`data_quality_audit.json` — raw data-quality findings
-`relevance_summary.json` — relevance classification counts
-`bot_evaluation.json` — automated-traffic evaluation
-`sentiment_summary.json` — sentiment totals
-`vss_15min.csv` — 15-minute VSS results
-`incident_evaluation.csv` — planted-incident evaluation
-`scored_sample.csv` — scored sample for inspection
+- `data_quality_audit.json` — raw data-quality findings
+- `relevance_summary.json` — relevance classification counts
+- `bot_evaluation.json` — automated-traffic evaluation
+- `sentiment_summary.json` — sentiment totals
+- `vss_15min.csv` — 15-minute VSS results
+- `incident_evaluation.csv` — planted-incident evaluation
+- `scored_sample.csv` — scored sample for inspection
 
 ## Documentation
 
-**approach_tried.md** — approaches that were tested and dropped, with measured reasons
+- **approach_tried.md** — approaches that were tested and dropped, with measured reasons
 
-**assumptions.md** — assumptions made by the analysis and what could break if they are wrong
+- **assumptions.md** — assumptions made by the analysis and what could break if they are wrong
 
-**docs/memo/memo.pdf** — two-page recommendation memo
+- **docs/memo/memo.pdf** — two-page recommendation memo
 
-**presentation/** — final presentation deck
+- **presentation/** — final presentation deck
 
 ## Key Takeaway
 
